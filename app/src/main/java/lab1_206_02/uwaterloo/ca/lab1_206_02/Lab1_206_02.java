@@ -25,6 +25,8 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import lab1_206_02.uwaterloo.ca.lab1_206_02.ca.uwaterloo.sensortoy.LineGraphView;
 
+import static android.R.attr.start;
+
 
 //main class where all the activities are called
 public class Lab1_206_02 extends AppCompatActivity {
@@ -54,6 +56,8 @@ public class Lab1_206_02 extends AppCompatActivity {
     Button clearhighrecord;
     //button for CSV record accelerometer
     Button generateCSV;
+    //if false then, delete all the highest record
+    //boolean clearhighest = false;
 
 
 
@@ -89,6 +93,7 @@ public class Lab1_206_02 extends AppCompatActivity {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(15, 15, 15, 15);
         clearhighrecord.setLayoutParams(params);
+        //now that all the textViews has been created we can now set what the clear data button does
         rl.addView(clearhighrecord);
 
 
@@ -113,15 +118,16 @@ public class Lab1_206_02 extends AppCompatActivity {
                     //get the value of location and the array
                     //write a for loop that decreases to 0 from location
                     //and then goes from that location to the original one, so :
+                    int start = location;
+
                     for(int i =0; i<100; i++){
-                        int start = location;
                         if(start == 0){
-                            writer.println(String.format("%f, %f, %f", accelarray[start][0], accelarray[start][1], accelarray[start][2]));
+                            writer.println(String.format("%f, %f, %f for " + start, accelarray[start][0], accelarray[start][1], accelarray[start][2]));
                             //set the start time  to be 100
-                            start =100;
+                            start =99;
                         }
                         else{
-                            writer.println(String.format("%f, %f, %f", accelarray[start][0], accelarray[start][1], accelarray[start][2]));
+                            writer.println(String.format("%f, %f, %f for " + start, accelarray[start][0], accelarray[start][1], accelarray[start][2]));
                             start--;
                         }
                     }
@@ -172,9 +178,12 @@ public class Lab1_206_02 extends AppCompatActivity {
         Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
         //creates a new event listener and calls the class LightSensorEventListener
         //and connects it to display in the textview lightSensorText
-        SensorEventListener l = new LightSensorEventListener(lightSensorText, highestLightSensor);
+        final SensorEventListener l = new LightSensorEventListener(lightSensorText, highestLightSensor);
+        final LightSensorEventListener z = (LightSensorEventListener) l;
+        //z.resetHigh();
         //registers the listener to display in l and gets a delay normal
         sensorManager.registerListener(l, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+
 
 
         //Start of accelerometer sensor text view --------------------------------------------------
@@ -210,9 +219,8 @@ public class Lab1_206_02 extends AppCompatActivity {
         //now call the accelerometer class
         SensorEventListener a = new AccelerometerSensorEventListener(accelerometerReading,
                 highestAccelerometerReading,
-                graph,
-                accelarray,
-                location);
+                graph, accelarray,location);
+        final AccelerometerSensorEventListener y = (AccelerometerSensorEventListener) a;
         sensorManager.registerListener(a, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
 
@@ -241,6 +249,7 @@ public class Lab1_206_02 extends AppCompatActivity {
         highestMagneticReading = new TextView(getApplicationContext());
         rl.addView(highestMagneticReading);
         SensorEventListener b = new MagneticSensorEventListener(magneticSensorText, highestMagneticReading);
+        final MagneticSensorEventListener x = (MagneticSensorEventListener) b;
         highestMagneticReading.setPadding(15, 5, 0, 20);
         highestMagneticReading.setTextColor(Color.parseColor("#000000"));
         sensorManager.registerListener(b, magneticSensor, SensorManager.SENSOR_DELAY_NORMAL);
@@ -271,15 +280,18 @@ public class Lab1_206_02 extends AppCompatActivity {
         highestRotationVector.setPadding(15, 5, 0, 20);
         highestRotationVector.setTextColor(Color.parseColor("#000000"));
         SensorEventListener c = new RotationSensorEventListener(rotationSensorText, highestRotationVector);
+        final RotationSensorEventListener w = (RotationSensorEventListener) c;
         sensorManager.registerListener(c, roationSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
-
-        //now that all the textViews has been created we can now set what the clear data button does
         clearhighrecord.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v){
                 //set the highest recorded data back to 0
+                z.resetHigh();
+                y.resetHigh();
+                x.resetHigh();
+                w.resetHigh();
+                Toast.makeText(Lab1_206_02.this, "Highest Data has been cleared!", Toast.LENGTH_LONG).show();
                 //need to call all the sensors to set the highest all back to 0
-                //at the very end manually set all the Textviews for the highest back to 0
                 //once this has all been done, maybe toast the message that the data has been cleared
                 //so that the user knows
 
@@ -308,10 +320,19 @@ class LightSensorEventListener implements SensorEventListener{
 
     public void onAccuracyChanged (Sensor s, int i){  }
 
+    public void resetHigh(){
+        highest = 0;
+        output2.setText(Float.toString(highest));
+    }
+
+
     public void onSensorChanged (SensorEvent se){
+
         if (se.sensor.getType() == Sensor.TYPE_LIGHT){
             float temp = se.values[0];
             output1.setText(Float.toString(se.values[0]));
+
+
             if(temp > highest){
                 highest = temp;
                 output2.setText(Float.toString(highest));
@@ -333,11 +354,8 @@ class AccelerometerSensorEventListener implements SensorEventListener{
     float highesty=0;
     float highestz=0;
     String highestcordinates;
-    float tempx =0;
-    float tempy =0;
-    float tempz = 0;
-    float [][] accArray;
-    int increment;
+    float [][] accArray = new float[100][3];
+    int increment=0;
     LineGraphView graph1;
 
     public AccelerometerSensorEventListener(TextView outputView, TextView outputView2,
@@ -351,6 +369,14 @@ class AccelerometerSensorEventListener implements SensorEventListener{
 
     public void onAccuracyChanged (Sensor s, int i){  }
 
+    public void resetHigh(){
+        highestcordinates = "(0, 0, 0)";
+        highestx =0;
+        highesty=0;
+        highestz= 0;
+        output2.setText(highestcordinates);
+    }
+
     public void onSensorChanged (SensorEvent se) {
 
         graph1.addPoint(se.values);
@@ -362,7 +388,7 @@ class AccelerometerSensorEventListener implements SensorEventListener{
 
             //this is the case where the the length of the array has
             //been surpassed and must start rewriting elements in the array
-            if(increment == 100){
+            if(increment == 99){
                 accArray[increment][0] = se.values[0];
                 accArray[increment][1] = se.values[1];
                 accArray[increment][2] = se.values[2];
@@ -421,6 +447,14 @@ class MagneticSensorEventListener implements SensorEventListener{
 
     public void onAccuracyChanged (Sensor s, int i){  }
 
+    public void resetHigh(){
+        highestcordinates = "(0, 0, 0)";
+        highestx =0;
+        highesty=0;
+        highestz= 0;
+        output2.setText(highestcordinates);
+    }
+
     public void onSensorChanged (SensorEvent se) {
         if (se.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             String cordinatesx= Float.toString(se.values[0]);
@@ -470,6 +504,14 @@ class RotationSensorEventListener implements SensorEventListener{
     }
 
     public void onAccuracyChanged (Sensor s, int i){  }
+
+    public void resetHigh(){
+        highestcordinates = "(0, 0, 0)";
+        highestx =0;
+        highesty=0;
+        highestz= 0;
+        output2.setText(highestcordinates);
+    }
 
     public void onSensorChanged (SensorEvent se) {
         if (se.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
