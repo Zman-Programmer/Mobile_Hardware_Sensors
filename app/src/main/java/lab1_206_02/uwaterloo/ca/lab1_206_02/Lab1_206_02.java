@@ -45,6 +45,7 @@ public class Lab1_206_02 extends AppCompatActivity {
     TextView rotationSensorText;
     //declare the textview for the highest rotation vector
     TextView highestRotationVector;
+    //test
 
     //this is the array of the 100 last points in the accelerometer reading
     float [][] accelarray = new float [100][3];
